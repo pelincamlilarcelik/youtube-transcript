@@ -5,6 +5,7 @@ import subprocess
 import os
 from fpdf import FPDF
 from datetime import datetime
+from yt_dlp import YoutubeDL
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -15,17 +16,18 @@ os.makedirs("downloads", exist_ok=True)
 os.makedirs("transcripts", exist_ok=True)
 
 def download_audio(youtube_url):
-    output_path = "downloads/audio.%(ext)s"
-    command = [
-        "yt-dlp",
-        "-f", "bestaudio",
-        "--extract-audio",
-        "--audio-format", "mp3",
-        "-o", output_path,
-        youtube_url
-    ]
-    subprocess.run(command, check=True)
-    return "downloads/audio.mp3"
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': 'downloads/audio.%(ext)s',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+    }
+
+    with YoutubeDL(ydl_opts) as ydl:
+        ydl.download([youtube_url])
 
 def transcribe_audio(file_path):
     with open(file_path, "rb") as audio_file:
